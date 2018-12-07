@@ -1,0 +1,134 @@
+#include <iostream>
+#include <fstream>
+#include <cassert>
+#include <string>
+#include<vector>
+#include <cstdlib>
+#include<random>
+#include<ctime>
+#include<string.h>
+const int M=120,D=8;                  //some parameter of dataset
+double w[D];                          //current point w
+double d[D];                         //stochastic gradient 
+double full_d[8];                    //full gradient
+using namespace std;
+vector<vector<double>> all_data;
+vector<double> all_label;
+void load(const char*filename,int M,int D)
+{
+    //load all datas and labels
+    int i,j,pos;
+    string tem_str;
+    ifstream data_in(filename);
+    ofstream data_out("result.txt");
+    vector<double> tem_vector(D);
+    for(int i=0;i<M;i++)
+    {
+       //tem_vector.assign(D,0);         
+       data_in>>tem_str;
+       data_out<<atof(tem_str.c_str());
+       all_label.push_back(atof(tem_str.c_str()));
+       for(j=0;j<D;j++)
+       {
+           data_in>>tem_str;
+           pos=tem_str.find(":");
+           tem_str=tem_str.substr(pos+1);
+           data_out<<" "<<atof(tem_str.c_str());
+           tem_vector[j]=(atof(tem_str.c_str()));
+       }
+       all_data.push_back(tem_vector);
+       data_out<<endl;
+    }
+}
+int random(int M)
+{  
+    //generate a random int number in [0,M-1]
+    return rand()%M;
+} 
+double random(double max=1.0)
+{
+    //generate a random double in [0,max]
+   return (double)rand()/RAND_MAX*max;
+}
+void divide_data()
+{
+  //  
+}
+double loss_fun(double w[D])      //value of loss function
+{
+    //
+    double res=0,tem=0;
+    int i,j;
+    for(i=0;i<all_data.size();++i)
+    { tem=0;
+      for(j=0;j<all_data[i].size();++j)
+       tem+=all_data[i][j]*w[j];
+       res+=pow((tem-all_label[i]),2)/(2*M);
+    }
+    return res;
+}
+void sto_grad(int k,double tem_w[D])              //stochastic gradient
+{
+    double tem=0;
+    int i;
+    for(i=0;i<all_data[k].size();++i)
+       tem+=tem_w[i]*all_data[k][i];
+    tem=tem-all_label[k];
+    for(i=0;i<all_data[k].size();++i)
+       d[i]=all_data[k][i]*tem;
+} 
+void full_grad(double tem_w[D])
+{
+    int i,k;
+    memset(full_d,0,sizeof(double)*D);
+    for(k=0;k<M;++k)
+    {
+      sto_grad(k,tem_w);                    //calculate full gradient
+      for(i=0;i<D;++i)
+        full_d[i]+=d[i];
+    }
+    for(i=0;i<D;++i)
+    full_d[i]/=M;
+}
+void GD()
+{
+    double t=0.01;            //then stepsize of gradient descent
+    int N=10000;                //the number of iterations
+    int i,j;
+    for(i=0;i<N+1;++i)
+    {
+        full_grad(w);      //calculate the stochastic gradient
+        for(j=0;j<D;++j)
+          w[j]=w[j]-t*full_d[j];   //update w
+        if(i%10==0)
+        cout<<"loss function after "<<i+1<<" times iteration is "<<loss_fun(w)<<endl;
+    }   
+}
+void SGD()
+{
+    double t=0.01;            //then stepsize of gradient descent
+    int N=10000;                //the number of iterations
+    int i,j;
+    for(i=0;i<N+1;++i)
+    {
+        sto_grad(random(M),w);      //calculate the stochastic gradient
+        for(j=0;j<D;++j)
+          w[j]=w[j]-t*d[j];   //update w
+        if(i%10==0)
+        cout<<"loss function after "<<i+1<<" times iteration is "<<loss_fun(w)<<endl;
+    }
+}
+int main()
+{
+    int ss;
+    double aa,max=10.0;
+    srand(time(NULL));                //the seed of random 
+    char *filename="abalone.txt";
+    load (filename,M,D);
+    for (int i=0;i<D;i++)            //innitialize w0
+       w[i]=random();
+    //SGD();
+    GD();
+    cin>>aa;
+    return 0;
+}
